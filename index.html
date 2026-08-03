@@ -148,6 +148,11 @@ function render() {
   }
 
   const dates = [...new Set(prepared.flatMap(s => s.data.map(d => d.date)))].sort();
+
+  const endDate = new Date(dates.at(-1) + "T00:00:00");
+  endDate.setFullYear(endDate.getFullYear() - 1);
+  const startIdx = dates.findIndex(d => d >= endDate.toISOString().slice(0, 10));
+  const zoomStart = Math.max(0, (startIdx / dates.length) * 100);
   const maps = prepared.map(s => new Map(s.data.map(d => [d.date, d])));
   const seriesData = prepared.map((s, si) => ({
     name: s.name,
@@ -228,9 +233,10 @@ function render() {
       splitLine: { lineStyle: { color: "#f0f1f4" } },
     },
     dataZoom: [
-      { type: "inside", start: 0, end: 100 },
+      { type: "inside", start: zoomStart, end: 100 },
       {
         type: "slider", height: 18, bottom: 8,
+        start: zoomStart, end: 100,
         borderColor: "#e8eaef", backgroundColor: "#f7f8fa",
         fillerColor: "rgba(47,111,237,0.12)",
         handleStyle: { color: "#fff", borderColor: "#2f6fed" },
