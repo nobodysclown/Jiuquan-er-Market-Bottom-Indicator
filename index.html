@@ -165,7 +165,10 @@ function render() {
     data: dates.map(d => {
       const hit = maps[si].get(d);
       if (!hit) return null;
-      return [d, mode === "norm" ? +(hit.close / s.base * 100).toFixed(2) : +hit.close.toFixed(2)];
+      const v = mode === "norm"
+        ? +((hit.close / s.base - 1) * 100).toFixed(2)
+        : +hit.close.toFixed(2);
+      return [d, v];
     }),
     lineStyle: { width: 2.2, color: s.color },
     itemStyle: { color: s.color },
@@ -210,7 +213,7 @@ function render() {
           const col = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${s.color};margin-right:6px"></span>`;
           const ret = (hit.close / s.base - 1) * 100;
           if (mode === "norm") {
-            html += `<div style="display:flex;justify-content:space-between;gap:24px">${col}${s.name}<span>${fmtPct(ret)} <span style="color:#9aa2b0">(${hit.close.toFixed(2)})</span></span></div>`;
+            html += `<div style="display:flex;justify-content:space-between;gap:24px">${col}${s.name}<span>${fmtPct(ret)}</span></div>`;
           } else {
             html += `<div style="display:flex;justify-content:space-between;gap:24px">${col}${s.name}<span>${hit.close.toFixed(2)} <span style="color:#9aa2b0">(${fmtPct(ret)})</span></span></div>`;
           }
@@ -229,7 +232,7 @@ function render() {
     yAxis: {
       type: "value",
       scale: true,
-      axisLabel: { color: "#8a919f" },
+      axisLabel: { color: "#8a919f", formatter: v => (mode === "norm" ? v + "%" : v) },
       splitLine: { lineStyle: { color: "#f0f1f4" } },
     },
     dataZoom: [
