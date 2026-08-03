@@ -150,7 +150,7 @@ function render() {
   const dates = [...new Set(prepared.flatMap(s => s.data.map(d => d.date)))].sort();
 
   const endDate = new Date(dates.at(-1) + "T00:00:00");
-  endDate.setFullYear(endDate.getFullYear() - 1);
+  endDate.setFullYear(endDate.getFullYear() - 10);
   const startIdx = dates.findIndex(d => d >= endDate.toISOString().slice(0, 10));
   const zoomStart = Math.max(0, (startIdx / dates.length) * 100);
   const maps = prepared.map(s => new Map(s.data.map(d => [d.date, d])));
