@@ -83,8 +83,8 @@
       <span>自成立以来收益率走势 <span id="range-label"></span></span>
       <span style="flex:1"></span>
       <span class="seg">
-        <button data-mode="norm" class="active">收益率</button>
-        <button data-mode="pt">点位</button>
+        <button data-mode="norm">收益率</button>
+        <button data-mode="pt" class="active">点位</button>
       </span>
     </div>
     <div id="chart"></div>
@@ -107,7 +107,7 @@ const SERIES = [
   { key: "885003", name: "万得偏债混合",   color: "#2f6fed" },
 ];
 
-let chart, raw = {}, mode = "norm";
+let chart, raw = {}, mode = "pt";
 
 function fmtPct(x) { return (x >= 0 ? "+" : "") + x.toFixed(2) + "%"; }
 
