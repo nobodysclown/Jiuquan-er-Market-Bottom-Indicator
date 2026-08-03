@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>抄底指数 · 沪深300全收益 vs 万得偏债混合</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --card: #ffffff;
+    --text: #1f2329;
+    --muted: #8a919f;
+    --red: #e44d3e;
+    --blue: #2f6fed;
+    --border: #e8eaef;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+    padding: 24px 16px 40px;
+  }
+  .wrap { max-width: 1000px; margin: 0 auto; }
+  .header { margin-bottom: 16px; }
+  .header h1 { font-size: 22px; font-weight: 700; }
+  .header .sub { color: var(--muted); font-size: 13px; margin-top: 6px; line-height: 1.6; }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-bottom: 12px; }
+  .stat {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 18px;
+  }
+  .stat .name { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .stat .name .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .stat .num { font-size: 26px; font-weight: 700; margin-top: 6px; font-variant-numeric: tabular-nums; }
+  .stat .num.up { color: var(--red); }
+  .stat .num.down { color: var(--blue); }
+  .stat .extra { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px 8px;
+  }
+  .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .btn {
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--text);
+    border-radius: 999px;
+    padding: 5px 14px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .btn:hover { border-color: var(--blue); color: var(--blue); }
+  .btn.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .spacer { flex: 1; }
+  .seg { display: flex; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
+  .seg button { border: none; background: #fff; padding: 5px 14px; font-size: 13px; cursor: pointer; }
+  .seg button.active { background: #eef3ff; color: var(--blue); }
+  #chart { width: 100%; height: 520px; }
+  .legend-inline { display: flex; gap: 18px; font-size: 12px; color: var(--muted); padding: 6px 4px 10px; flex-wrap: wrap; }
+  .legend-inline b { color: var(--text); font-weight: 600; }
+
+  .footer { color: var(--muted); font-size: 12px; margin-top: 14px; line-height: 1.8; }
+  .footer a { color: var(--blue); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1>抄底指数图</h1>
+    <div class="sub">沪深300全收益指数 vs 万得偏债混合型基金指数 · 2005年至今 · 数据缺失段不显示</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="name"><span class="dot" style="background:var(--red)"></span>沪深300全收益指数 (H00300)</div>
+      <div class="num" id="stat-hs300">--</div>
+      <div class="extra" id="stat-hs300-dd">--</div>
+    </div>
+    <div class="stat">
+      <div class="name"><span class="dot" style="background:var(--blue)"></span>万得偏债混合型基金指数 (885003.WI)</div>
+      <div class="num" id="stat-pz">--</div>
+      <div class="extra" id="stat-pz-dd">--</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="toolbar">
+      <button class="btn active" data-range="all">全部</button>
+      <button class="btn" data-range="10y">近10年</button>
+      <button class="btn" data-range="5y">近5年</button>
+      <button class="btn" data-range="3y">近3年</button>
+      <button class="btn" data-range="1y">近1年</button>
+      <button class="btn" data-range="2016">2016以来</button>
+      <div class="spacer"></div>
+      <div class="seg">
+        <button data-mode="ret" class="active">区间涨幅</button>
+        <button data-mode="pt">点位</button>
+      </div>
+    </div>
+    <div id="chart"></div>
+    <div class="legend-inline">
+      <span><b id="lh-name">沪深300全收益</b> <span id="lh-val">--</span></span>
+      <span><b id="lp-name">万得偏债混合</b> <span id="lp-val">--</span></span>
+    </div>
+  </div>
+
+  <div class="footer">
+    数据来源: 沪深300全收益指数(H00300) 来自 <a href="https://www.csindex.com.cn/zh-CN/indices/index-detail/H00300">中证指数公司官网</a> (日线); 万得偏债混合型基金指数(885003.WI) 来自 <a href="https://www.windindices.com/">万得指数官网</a> 免费接口 (2016年8月起周线 + 近1年日线, 更早历史需 Wind 终端)。<br>
+    两序列在所选区间起点归一化为 100, 各序列从其自身首个数据日开始。本页面仅作研究展示, 不构成投资建议。
+    <span id="update-time"></span>
+  </div>
+</div>
+
+<script>
+const RANGES = {
+  all:  { label: "全部",   start: "2005-01-01" },
+  "10y": { label: "近10年", start: null, years: 10 },
+  "5y":  { label: "近5年",  start: null, years: 5 },
+  "3y":  { label: "近3年",  start: null, years: 3 },
+  "1y":  { label: "近1年",  start: null, years: 1 },
+  "2016":{ label: "2016以来", start: "2016-08-01" },
+};
+const SERIES = [
+  { key: "h00300", name: "沪深300全收益", color: "#e44d3e" },
+  { key: "885003", name: "万得偏债混合",   color: "#2f6fed" },
+];
+
+let chart, raw = {}, mode = "ret", range = "all";
+
+function fmtPct(x) { return (x >= 0 ? "+" : "") + x.toFixed(2) + "%"; }
+
+function cumSeries(data, startDate) {
+  const idx = data.findIndex(d => d.date >= startDate);
+  if (idx < 0) return [];
+  const base = data[idx].close;
+  return data.slice(idx).map(d => ({ date: d.date, close: d.close, cum: d.close / base * 100 }));
+}
+
+function sliceToRange(series, startDate) {
+  return series.filter(d => d.date >= startDate);
+}
+
+function maxDrawdown(cum) {
+  let peak = -Infinity, mdd = 0;
+  for (const c of cum) {
+    peak = Math.max(peak, c.cum);
+    mdd = Math.min(mdd, c.cum / peak - 1);
+  }
+  return mdd * 100;
+}
+
+function render() {
+  const cfg = RANGES[range];
+  const today = new Date();
+  const endDate = today.toISOString().slice(0, 10);
+  let start = cfg.start;
+  if (!start) {
+    const d = new Date(today);
+    d.setFullYear(d.getFullYear() - cfg.years);
+    start = d.toISOString().slice(0, 10);
+  }
+  if (start < "2005-01-01") start = "2005-01-01";
+
+  const prepared = SERIES.map(s => ({
+    ...s,
+    cum: cumSeries(raw[s.key], start),
+    raw: sliceToRange(raw[s.key], start),
+  }));
+
+  for (const s of prepared) {
+    const last = s.cum.at(-1);
+    const dd = s.cum.length ? maxDrawdown(s.cum) : 0;
+    const numEl = document.getElementById(s.key === "h00300" ? "stat-hs300" : "stat-pz");
+    const ddEl = document.getElementById(s.key === "h00300" ? "stat-hs300-dd" : "stat-pz-dd");
+    if (!last) {
+      numEl.textContent = "--";
+      ddEl.textContent = "暂无数据";
+      continue;
+    }
+    const ret = last.cum - 100;
+    numEl.textContent = fmtPct(ret);
+    numEl.className = "num " + (ret >= 0 ? "up" : "down");
+    ddEl.textContent = "区间最大回撤 " + dd.toFixed(2) + "%";
+  }
+
+  const dates = [...new Set(prepared.flatMap(s => s.cum.map(d => d.date)))].sort();
+  const cumMaps = prepared.map(s => new Map(s.cum.map(d => [d.date, d])));
+  const seriesData = prepared.map((s, si) => ({
+    name: s.name,
+    type: "line",
+    smooth: true,
+    symbol: "none",
+    data: dates.map(d => {
+      const hit = cumMaps[si].get(d);
+      return hit ? [d, mode === "ret" ? +hit.cum.toFixed(2) : +hit.close.toFixed(2)] : null;
+    }),
+    lineStyle: { width: 2.2, color: s.color },
+    itemStyle: { color: s.color },
+    areaStyle: {
+      opacity: 0.08,
+      color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+        { offset: 0, color: s.color + "55" },
+        { offset: 1, color: s.color + "00" },
+      ]),
+    },
+    connectNulls: false,
+    z: 2,
+  }));
+
+  const lastDate = dates.at(-1) || "";
+  for (const s of prepared) {
+    const lv = s.cum.at(-1);
+    const el = document.getElementById(s.key === "h00300" ? "lh-val" : "lp-val");
+    el.textContent = lv ? (mode === "ret" ? fmtPct(lv.cum - 100) : lv.close.toFixed(2)) + " (" + lastDate + ")" : "--";
+  }
+
+  chart.setOption({
+    animation: false,
+    grid: { left: 56, right: 20, top: 20, bottom: 50 },
+    tooltip: {
+      trigger: "axis",
+      backgroundColor: "rgba(31,35,41,0.92)",
+      borderWidth: 0,
+      textStyle: { color: "#fff", fontSize: 12 },
+      axisPointer: { type: "cross", label: { backgroundColor: "#555" } },
+      formatter(params) {
+        const p = params[0];
+        if (!p) return "";
+        let html = `<div style="font-weight:600;margin-bottom:4px">${p.axisValue}</div>`;
+        for (const s of prepared) {
+          const hit = s.cum.find(d => d.date === p.axisValue);
+          if (!hit) continue;
+          const col = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${s.color};margin-right:6px"></span>`;
+          if (mode === "ret") {
+            html += `<div style="display:flex;justify-content:space-between;gap:24px">${col}${s.name}<span>${fmtPct(hit.cum - 100)}</span></div>`;
+          } else {
+            html += `<div style="display:flex;justify-content:space-between;gap:24px">${col}${s.name}<span>${hit.close.toFixed(2)}</span></div>`;
+          }
+        }
+        return html;
+      },
+    },
+    legend: { show: false },
+    xAxis: {
+      type: "category",
+      data: dates,
+      boundaryGap: false,
+      axisLine: { lineStyle: { color: "#dcdcdc" } },
+      axisLabel: { color: "#8a919f" },
+    },
+    yAxis: {
+      type: "value",
+      scale: true,
+      axisLabel: {
+        color: "#8a919f",
+        formatter: v => (mode === "ret" ? v.toFixed(0) + "" : v.toFixed(0)),
+      },
+      splitLine: { lineStyle: { color: "#f0f1f4" } },
+    },
+    dataZoom: [
+      { type: "inside", start: 0, end: 100 },
+      {
+        type: "slider", height: 18, bottom: 8,
+        borderColor: "#e8eaef", backgroundColor: "#f7f8fa",
+        fillerColor: "rgba(47,111,237,0.12)",
+        handleStyle: { color: "#fff", borderColor: "#2f6fed" },
+        textStyle: { color: "#8a919f" },
+      },
+    ],
+    series: seriesData,
+  });
+}
+
+async function init() {
+  const [h, w] = await Promise.all([
+    fetch("./data/h00300.json").then(r => r.json()),
+    fetch("./data/885003.json").then(r => r.json()),
+  ]);
+  raw.h00300 = h;
+  raw["885003"] = w;
+  chart = echarts.init(document.getElementById("chart"));
+  render();
+  window.addEventListener("resize", () => chart && chart.resize());
+  document.getElementById("update-time").textContent =
+    " · 数据更新至 " + (raw.h00300.at(-1) ? raw.h00300.at(-1).date : "");
+}
+
+document.querySelectorAll(".btn[data-range]").forEach(b => {
+  b.addEventListener("click", () => {
+    document.querySelectorAll(".btn[data-range]").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+    range = b.dataset.range;
+    render();
+  });
+});
+document.querySelectorAll(".seg button").forEach(b => {
+  b.addEventListener("click", () => {
+    document.querySelectorAll(".seg button").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+    mode = b.dataset.mode;
+    render();
+  });
+});
+
+init();
+</script>
+</body>
+</html>
