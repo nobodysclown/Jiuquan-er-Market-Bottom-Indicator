@@ -1,10 +1,10 @@
-# Jiuquan-er-Market-Bottom-Indicator
+# chaodizhishu
 
 A China A-share market bottom-fishing signal.
 
 ## 抄底指数图
 
-网页: <https://nobodysclown.github.io/Jiuquan-er-Market-Bottom-Indicator/>
+网页: <https://chaodizhishu.bc1state.org/> (备用: <https://nobodysclown.github.io/chaodizhishu/>)
 
 一个韭圈儿风格的对比图,展示 **沪深300全收益指数** 与 **万得偏债混合型基金指数** 自各自成立以来的累计收益率走势:
 
