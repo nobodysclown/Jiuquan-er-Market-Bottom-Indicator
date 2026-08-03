@@ -62,7 +62,7 @@
 <div class="wrap">
   <div class="header">
     <h1>韭圈儿抄底指数</h1>
-    <div class="sub">沪深300全收益指数 vs 万得偏债混合型基金指数 · 2005年8月29日为基准 · 收益率</div>
+    <div class="sub">沪深300全收益指数 vs 万得偏债混合型基金指数 · 成立以来 · 收益率</div>
   </div>
 
   <div class="stats">
@@ -80,7 +80,7 @@
 
   <div class="card">
     <div class="card-title" style="display:flex;align-items:center;gap:10px">
-      <span>自2005年8月29日收益率走势 <span id="range-label"></span></span>
+      <span>自成立以来收益率走势 <span id="range-label"></span></span>
       <span style="flex:1"></span>
       <span class="seg">
         <button data-mode="norm" class="active">收益率</button>
@@ -111,13 +111,6 @@ let chart, raw = {}, mode = "norm";
 
 function fmtPct(x) { return (x >= 0 ? "+" : "") + x.toFixed(2) + "%"; }
 
-const BASE_DATE = "2005-08-29";
-
-function fromBase(data) {
-  const idx = data.findIndex(d => d.date >= BASE_DATE);
-  return idx < 0 ? data : data.slice(idx);
-}
-
 function maxDrawdown(points) {
   let peak = -Infinity, mdd = 0;
   for (const p of points) {
@@ -129,7 +122,7 @@ function maxDrawdown(points) {
 
 function render() {
   const prepared = SERIES.map(s => {
-    const data = fromBase(raw[s.key]);
+    const data = raw[s.key];
     return { ...s, data, base: data.length ? data[0].close : null };
   });
 
@@ -144,12 +137,13 @@ function render() {
     }
     const ret = (last.close / s.base - 1) * 100;
     const mdd = maxDrawdown(s.data).toFixed(2);
+    const start = s.data[0].date;
     if (mode === "norm") {
       numEl.textContent = fmtPct(ret);
-      ddEl.textContent = `自${BASE_DATE} · 当前点位 ${last.close.toFixed(2)} · 最大回撤 ${mdd}%`;
+      ddEl.textContent = `自${start} · 当前点位 ${last.close.toFixed(2)} · 最大回撤 ${mdd}%`;
     } else {
       numEl.textContent = last.close.toFixed(2);
-      ddEl.textContent = `自${BASE_DATE} ${fmtPct(ret)} · 最大回撤 ${mdd}%`;
+      ddEl.textContent = `自${start} ${fmtPct(ret)} · 最大回撤 ${mdd}%`;
     }
   }
 
