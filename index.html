@@ -47,6 +47,9 @@
   }
   .card-title { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
   .card-title b { color: var(--text); }
+  .seg { display: flex; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
+  .seg button { border: none; background: #fff; padding: 3px 12px; font-size: 12px; cursor: pointer; color: var(--text); }
+  .seg button.active { background: #eef3ff; color: var(--blue); }
   #chart { width: 100%; height: 520px; }
   .legend-inline { display: flex; gap: 18px; font-size: 12px; color: var(--muted); padding: 6px 4px 10px; flex-wrap: wrap; }
   .legend-inline b { color: var(--text); font-weight: 600; }
@@ -59,7 +62,7 @@
 <div class="wrap">
   <div class="header">
     <h1>韭圈抄底指数</h1>
-    <div class="sub">沪深300全收益指数 vs 万得偏债混合型基金指数 · 近1年点位</div>
+    <div class="sub">沪深300全收益指数 vs 万得偏债混合型基金指数 · 近1年</div>
   </div>
 
   <div class="stats">
@@ -76,7 +79,14 @@
   </div>
 
   <div class="card">
-    <div class="card-title">近1年点位走势 <span id="range-label"></span></div>
+    <div class="card-title" style="display:flex;align-items:center;gap:10px">
+      <span>近1年走势 <span id="range-label"></span></span>
+      <span style="flex:1"></span>
+      <span class="seg">
+        <button data-mode="norm" class="active">归一化</button>
+        <button data-mode="pt">点位</button>
+      </span>
+    </div>
     <div id="chart"></div>
     <div class="legend-inline">
       <span><b id="lh-name">沪深300全收益</b> <span id="lh-val">--</span></span>
@@ -97,7 +107,9 @@ const SERIES = [
   { key: "885003", name: "万得偏债混合",   color: "#2f6fed" },
 ];
 
-let chart, raw = {};
+let chart, raw = {}, mode = "norm";
+
+function fmtPct(x) { return (x >= 0 ? "+" : "") + x.toFixed(2) + "%"; }
 
 function lastYear(data) {
   const end = data.at(-1);
@@ -118,11 +130,13 @@ function maxDrawdown(points) {
 }
 
 function render() {
-  const prepared = SERIES.map(s => ({ ...s, data: lastYear(raw[s.key]) }));
+  const prepared = SERIES.map(s => {
+    const data = lastYear(raw[s.key]);
+    return { ...s, data, base: data.length ? data[0].close : null };
+  });
 
   for (const s of prepared) {
     const last = s.data.at(-1);
-    const first = s.data[0];
     const numEl = document.getElementById(s.key === "h00300" ? "stat-hs300" : "stat-pz");
     const ddEl = document.getElementById(s.key === "h00300" ? "stat-hs300-dd" : "stat-pz-dd");
     if (!last) {
@@ -130,9 +144,15 @@ function render() {
       ddEl.textContent = "暂无数据";
       continue;
     }
-    numEl.textContent = last.close.toFixed(2);
-    const ret = (last.close / first.close - 1) * 100;
-    ddEl.textContent = `近1年 ${ret >= 0 ? "+" : ""}${ret.toFixed(2)}% · 最大回撤 ${maxDrawdown(s.data).toFixed(2)}%`;
+    const ret = (last.close / s.base - 1) * 100;
+    const mdd = maxDrawdown(s.data).toFixed(2);
+    if (mode === "norm") {
+      numEl.textContent = fmtPct(ret);
+      ddEl.textContent = `当前点位 ${last.close.toFixed(2)} · 最大回撤 ${mdd}%`;
+    } else {
+      numEl.textContent = last.close.toFixed(2);
+      ddEl.textContent = `近1年 ${fmtPct(ret)} · 最大回撤 ${mdd}%`;
+    }
   }
 
   const dates = [...new Set(prepared.flatMap(s => s.data.map(d => d.date)))].sort();
@@ -144,7 +164,8 @@ function render() {
     symbol: "none",
     data: dates.map(d => {
       const hit = maps[si].get(d);
-      return hit ? [d, +hit.close.toFixed(2)] : null;
+      if (!hit) return null;
+      return [d, mode === "norm" ? +(hit.close / s.base * 100).toFixed(2) : +hit.close.toFixed(2)];
     }),
     lineStyle: { width: 2.2, color: s.color },
     itemStyle: { color: s.color },
@@ -165,7 +186,9 @@ function render() {
   for (const s of prepared) {
     const lv = s.data.at(-1);
     const el = document.getElementById(s.key === "h00300" ? "lh-val" : "lp-val");
-    el.textContent = lv ? lv.close.toFixed(2) + " (" + dates.at(-1) + ")" : "--";
+    if (!lv) { el.textContent = "--"; continue; }
+    const ret = (lv.close / s.base - 1) * 100;
+    el.textContent = mode === "norm" ? fmtPct(ret) + " (" + dates.at(-1) + ")" : lv.close.toFixed(2) + " (" + dates.at(-1) + ")";
   }
 
   chart.setOption({
@@ -185,7 +208,12 @@ function render() {
           const hit = s.data.find(d => d.date === p.axisValue);
           if (!hit) continue;
           const col = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${s.color};margin-right:6px"></span>`;
-          html += `<div style="display:flex;justify-content:space-between;gap:24px">${col}${s.name}<span>${hit.close.toFixed(2)}</span></div>`;
+          const ret = (hit.close / s.base - 1) * 100;
+          if (mode === "norm") {
+            html += `<div style="display:flex;justify-content:space-between;gap:24px">${col}${s.name}<span>${fmtPct(ret)} <span style="color:#9aa2b0">(${hit.close.toFixed(2)})</span></span></div>`;
+          } else {
+            html += `<div style="display:flex;justify-content:space-between;gap:24px">${col}${s.name}<span>${hit.close.toFixed(2)} <span style="color:#9aa2b0">(${fmtPct(ret)})</span></span></div>`;
+          }
         }
         return html;
       },
@@ -231,6 +259,15 @@ async function init() {
   document.getElementById("update-time").textContent =
     " · 数据更新至 " + (raw.h00300.at(-1) ? raw.h00300.at(-1).date : "");
 }
+
+document.querySelectorAll(".seg button").forEach(b => {
+  b.addEventListener("click", () => {
+    document.querySelectorAll(".seg button").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+    mode = b.dataset.mode;
+    render();
+  });
+});
 
 init();
 </script>
