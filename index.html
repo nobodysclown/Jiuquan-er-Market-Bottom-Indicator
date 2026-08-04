@@ -96,7 +96,7 @@
 
   <div class="footer">
     数据来源: 沪深300全收益指数(H00300) 来自 <a href="https://www.csindex.com.cn/zh-CN/indices/index-detail/H00300">中证指数公司官网</a> (日线); 万得偏债混合型基金指数(885003.WI) 来自 <a href="https://www.windindices.com/">万得指数官网</a> 免费接口 (近1年日线)。<br>
-    免责声明: 本页面为个人学习研究用途, 与 <b>韭圈儿官方无关</b>, 韭圈儿不对本页面内容负责; 数据仅供参考, 不构成任何投资建议; 投资有风险, 入市需谨慎。
+    免责声明: 本页面为个人学习研究用途, 与 <b>韭圈儿官方无关</b>, 韭圈儿不对本页面内容负责; 数据仅供参考, 不构成任何投资建议; 投资有风险, 入市需谨慎。<br>
     <span id="update-time"></span>
   </div>
 </div>
@@ -258,7 +258,7 @@ async function init() {
   render();
   window.addEventListener("resize", () => chart && chart.resize());
   document.getElementById("update-time").textContent =
-    " · 数据更新至 " + (raw.h00300.at(-1) ? raw.h00300.at(-1).date : "");
+    "数据更新至 " + (raw.h00300.at(-1) ? raw.h00300.at(-1).date : "");
 }
 
 document.querySelectorAll(".seg button").forEach(b => {
